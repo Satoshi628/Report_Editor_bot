@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="社内週報作成支援Webアプリ - AI による文書作成・修正・教育">
+    <title>週報アシスタント</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Quill.js -->
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="app-header">
+        <div class="header-left">
+            <div class="app-logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                </svg>
+            </div>
+            <h1 class="app-title">週報アシスタント</h1>
+        </div>
+        <div class="header-center">
+            <div class="mode-switcher">
+                <button class="mode-btn active" data-mode="compose" id="btn-mode-compose">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                    </svg>
+                    文書作成・修正
+                </button>
+                <button class="mode-btn" data-mode="education" id="btn-mode-education">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                    </svg>
+                    教育
+                </button>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="icon-btn" id="btn-clear-chat" title="チャット履歴クリア">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="app-main">
+        <!-- 左パネル: 過去の週報 -->
+        <aside class="panel panel-left" id="panel-left">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    過去の週報
+                </h2>
+                <div class="panel-tabs">
+                    <button class="tab-btn active" data-tab="related" id="tab-related">関連</button>
+                    <button class="tab-btn" data-tab="all" id="tab-all">一覧</button>
+                    <button class="tab-btn" data-tab="drafts" id="tab-drafts">下書き</button>
+                </div>
+            </div>
+            <div class="panel-body" id="report-list">
+                <div class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" opacity="0.3">
+                        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    <p>エディタに入力すると<br>関連する週報が表示されます</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- リサイズハンドル -->
+        <div class="resize-handle" id="resize-left"></div>
+
+        <!-- 中央パネル: エディタ -->
+        <section class="panel panel-center" id="panel-center">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                    </svg>
+                    週報エディタ
+                </h2>
+                <div class="editor-actions">
+                    <button class="action-btn" id="btn-add-comment" title="選択範囲にコメントを追加">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        コメント
+                    </button>
+                    <button class="action-btn action-btn-submit" id="btn-submit-comments" title="コメントをAIに反映">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+                        </svg>
+                        Submit
+                    </button>
+                    <button class="action-btn" id="btn-search-related" title="関連週報を検索">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                        </svg>
+                        関連検索
+                    </button>
+                    <button class="action-btn" id="btn-clear-editor" title="エディタをクリア">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                        </svg>
+                        クリア
+                    </button>
+                </div>
+            </div>
+            <div class="editor-container">
+                <div id="quill-editor"></div>
+            </div>
+        </section>
+
+        <!-- リサイズハンドル -->
+        <div class="resize-handle" id="resize-right"></div>
+
+        <!-- 右パネル: チャット -->
+        <aside class="panel panel-right" id="panel-right">
+            <div class="panel-header">
+                <h2 class="panel-title">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    AIチャット
+                </h2>
+                <span class="mode-badge" id="chat-mode-badge">文書作成・修正</span>
+            </div>
+            <div class="chat-container" id="chat-messages">
+                <div class="chat-welcome">
+                    <div class="welcome-icon">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </div>
+                    <h3>AIアシスタントへようこそ</h3>
+                    <p>週報の作成・修正についてお手伝いします。<br>エディタに内容を入力してからメッセージを送信してください。</p>
+                    <div class="quick-actions">
+                        <button class="quick-btn" data-message="この週報を添削してください">📝 添削してください</button>
+                        <button class="quick-btn" data-message="この内容で週報を作成してください">✨ 週報を作成</button>
+                        <button class="quick-btn" data-message="文章をもっと簡潔にしてください">✂️ 簡潔にする</button>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea id="chat-input" placeholder="メッセージを入力..." rows="1"></textarea>
+                    <button class="send-btn" id="btn-send" title="送信">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- 週報詳細モーダル -->
+    <div class="modal-overlay" id="report-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">週報詳細</h3>
+                <button class="modal-close" id="modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+            </div>
+            <div class="modal-footer">
+                <button class="action-btn" id="btn-insert-to-editor">エディタに挿入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- コメント入力ポップオーバー -->
+    <div class="comment-popover" id="comment-popover">
+        <div class="comment-popover-header">コメントを追加</div>
+        <textarea id="comment-input" placeholder="修正指示を入力..." rows="3"></textarea>
+        <div class="comment-popover-actions">
+            <button class="action-btn" id="btn-comment-cancel">キャンセル</button>
+            <button class="action-btn action-btn-submit" id="btn-comment-confirm">追加</button>
+        </div>
+    </div>
+
+    <!-- Quill.js -->
+    <script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+
+    <!-- App JS -->
+    <script src="/static/js/editor.js"></script>
+    <script src="/static/js/chat.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
