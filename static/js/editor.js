@@ -29,7 +29,7 @@ const EditorModule = (() => {
         }
         CommentBlot.blotName = 'comment';
         CommentBlot.tagName = 'span';
-        Quill.register(CommentBlot);
+        Quill.register(CommentBlot, true);
 
         quill = new Quill('#quill-editor', {
             theme: 'snow',
@@ -50,6 +50,9 @@ const EditorModule = (() => {
             },
         });
 
+        // ツールチップ要素を作成（selection-changeより先に）
+        createSelectionTooltip();
+
         // テキスト選択時にツールチップを表示
         quill.on('selection-change', (range) => {
             if (range && range.length > 0) {
@@ -60,9 +63,6 @@ const EditorModule = (() => {
             }
         });
 
-        // ツールチップ要素を作成
-        createSelectionTooltip();
-
         return quill;
     }
 
@@ -70,6 +70,8 @@ const EditorModule = (() => {
      * 選択ツールチップ要素を作成する。
      */
     function createSelectionTooltip() {
+        // 既に作成済みなら何もしない
+        if (document.getElementById('selection-tooltip')) return;
         const tooltip = document.createElement('div');
         tooltip.id = 'selection-tooltip';
         tooltip.className = 'selection-tooltip';

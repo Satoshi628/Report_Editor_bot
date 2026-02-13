@@ -3,7 +3,19 @@
  */
 
 const ChatModule = (() => {
-    let sessionId = crypto.randomUUID();
+    /** セッションID生成（非HTTPS環境対応）。 */
+    function generateSessionId() {
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        // フォールバック: crypto.randomUUID 非対応環境
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            const v = c === 'x' ? r : (r & 0x3) | 0x8;
+            return v.toString(16);
+        });
+    }
+    let sessionId = generateSessionId();
     let isProcessing = false;
 
     const elements = {
